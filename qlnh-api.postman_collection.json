@@ -1,0 +1,809 @@
+{
+  "info": {
+    "name": "QLNH Restaurant API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Restaurant Reservation Management System API Collection"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "AUTH",
+      "item": [
+        {
+          "name": "1. Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.token) {",
+                  "        pm.collectionVariables.set('token', jsonData.data.token);",
+                  "        console.log('Token saved:', jsonData.data.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@gmail.com\",\n    \"password\": \"12345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}", "auth"],
+              "path": ["login"]
+            },
+            "description": "Đăng nhập để lấy JWT token"
+          }
+        },
+        {
+          "name": "2. Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Nguyen Van Test\",\n    \"email\": \"test@email.com\",\n    \"phone\": \"0909123456\",\n    \"password\": \"12345678\",\n    \"confirmPassword\": \"12345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}", "auth"],
+              "path": ["register"]
+            },
+            "description": "Đăng ký tài khoản khách hàng mới"
+          }
+        },
+        {
+          "name": "3. Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@email.com\",\n    \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": ["{{baseUrl}}", "auth"],
+              "path": ["verify-otp"]
+            },
+            "description": "Xác thực mã OTP"
+          }
+        },
+        {
+          "name": "4. Me - Get Current User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}", "auth"],
+              "path": ["me"]
+            },
+            "description": "Lấy thông tin user hiện tại"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ADMIN - USERS",
+      "item": [
+        {
+          "name": "List Users (Phân trang)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?page=1&itemsPerPage=10",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10"
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "description": "admin | staff | client",
+                  "disabled": true
+                },
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "description": "Tìm kiếm theo tên, email, phone",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Danh sách users với phân trang"
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Staff User\",\n    \"email\": \"staff@qlnh.com\",\n    \"phone\": \"0909876543\",\n    \"role\": \"staff\",\n    \"password\": \"12345678\",\n    \"confirmPassword\": \"12345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["users"]
+            },
+            "description": "Tạo user mới"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ADMIN - TABLES",
+      "item": [
+        {
+          "name": "Get All Tables",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/tables/all",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["tables", "all"]
+            },
+            "description": "Lấy tất cả bàn"
+          }
+        },
+        {
+          "name": "List Tables (Phân trang)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/tables?page=1&itemsPerPage=10",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["tables"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Danh sách bàn với phân trang"
+          }
+        },
+        {
+          "name": "Create Table",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Bàn D1\",\n    \"capacity\": 6,\n    \"status\": \"available\",\n    \"location\": \"Tầng 2 - Cửa sổ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/tables",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["tables"]
+            },
+            "description": "Tạo bàn mới"
+          }
+        },
+        {
+          "name": "Update Table",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Bàn D1 Updated\",\n    \"capacity\": 8,\n    \"status\": \"available\",\n    \"location\": \"Tầng 2 - VIP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/tables/8",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["tables", "8"]
+            },
+            "description": "Cập nhật bàn (thay ID = 8 bằng ID thực tế)"
+          }
+        },
+        {
+          "name": "Delete Table (Soft Delete)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/tables/8",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["tables", "8"]
+            },
+            "description": "Xóa bàn (soft delete - thay ID = 8 bằng ID thực tế)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ADMIN - FOODS",
+      "item": [
+        {
+          "name": "List Foods",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/foods?page=1&itemsPerPage=10",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["foods"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Danh sách món ăn"
+          }
+        },
+        {
+          "name": "Create Food",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Cà phê đen\",\n    \"description\": \"Cà phê đen nguyên chất\",\n    \"price\": 29000,\n    \"imageUrl\": \"https://picsum.photos/seed/coffee/200\",\n    \"status\": \"available\",\n    \"mealType\": \"breakfast\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/foods",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["foods"]
+            },
+            "description": "Tạo món ăn mới"
+          }
+        },
+        {
+          "name": "Update Food",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Cà phê đen Updated\",\n    \"description\": \"Cà phê đen nguyên chất - Đã cập nhật\",\n    \"price\": 35000,\n    \"imageUrl\": \"https://picsum.photos/seed/coffee/200\",\n    \"status\": \"available\",\n    \"mealType\": \"breakfast\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/foods/1",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["foods", "1"]
+            },
+            "description": "Cập nhật món ăn (thay ID = 1 bằng ID thực tế)"
+          }
+        },
+        {
+          "name": "Delete Food",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/foods/1",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["foods", "1"]
+            },
+            "description": "Xóa món ăn (thay ID = 1 bằng ID thực tế)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ADMIN - COMBOS",
+      "item": [
+        {
+          "name": "List Combos",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/combos?page=1&itemsPerPage=10",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["combos"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Danh sách combo"
+          }
+        },
+        {
+          "name": "Create Combo with Foods",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Combo cặp đôi\",\n    \"price\": 250000,\n    \"description\": \"Combo dành cho 2 người gồm 2 món chính, 2 món tráng miệng và 2 đồ uống\",\n    \"status\": \"available\",\n    \"imageUrl\": \"https://picsum.photos/seed/combo1/200\",\n    \"foodItems\": [\n        {\"foodId\": 6, \"quantity\": 2},\n        {\"foodId\": 4, \"quantity\": 2},\n        {\"foodId\": 2, \"quantity\": 2}\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/combos",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["combos"]
+            },
+            "description": "Tạo combo kèm danh sách món (thay foodId bằng ID thực tế)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ADMIN - RESERVATIONS",
+      "item": [
+        {
+          "name": "List Reservations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/reservations?page=1&itemsPerPage=10",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["reservations"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Danh sách reservation"
+          }
+        },
+        {
+          "name": "Create Reservation (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Nguyen Van A\",\n    \"email\": \"nguyenvana@email.com\",\n    \"phone\": \"0901234567\",\n    \"date\": \"2026-06-01\",\n    \"time\": \"19:00\",\n    \"numberOfPeople\": 4,\n    \"orderDetails\": \"{\\\"Mì Ý sốt bò bằm\\\": 2, \\\"Salad trộn\\\": 2}\",\n    \"orderType\": \"food\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reservations",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["reservations"]
+            },
+            "description": "Tạo reservation (admin đặt thay khách)"
+          }
+        },
+        {
+          "name": "Assign Table to Reservation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"tableId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reservations/1/assign-table",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["reservations", "1", "assign-table"]
+            },
+            "description": "Gán bàn cho reservation (thay ID = 1 bằng reservation ID thực tế)"
+          }
+        },
+        {
+          "name": "Cancel Reservation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/reservations/1",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["reservations", "1"]
+            },
+            "description": "Hủy reservation (thay ID = 1 bằng ID thực tế)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "CLIENT (Public - Không cần Auth)",
+      "item": [
+        {
+          "name": "List Foods (Available)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/client/foods?page=1&itemsPerPage=6",
+              "host": ["{{baseUrl}}", "client"],
+              "path": ["foods"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "6"
+                },
+                {
+                  "key": "mealType",
+                  "value": "",
+                  "description": "breakfast | lunch | dinner | dessert",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Danh sách món ăn available (public API)"
+          }
+        },
+        {
+          "name": "List Combos (Active)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/client/combos?page=1&itemsPerPage=12",
+              "host": ["{{baseUrl}}", "client"],
+              "path": ["combos"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "itemsPerPage",
+                  "value": "12"
+                }
+              ]
+            },
+            "description": "Danh sách combo active (public API)"
+          }
+        },
+        {
+          "name": "Check Table Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/client/tables/availability?date=2026-06-01&time=19:00",
+              "host": ["{{baseUrl}}", "client"],
+              "path": ["tables", "availability"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-06-01"
+                },
+                {
+                  "key": "time",
+                  "value": "19:00"
+                }
+              ]
+            },
+            "description": "Kiểm tra chỗ trống theo ngày và giờ"
+          }
+        },
+        {
+          "name": "Create Reservation (Client)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Khach B\",\n    \"email\": \"khachb@email.com\",\n    \"phone\": \"0912345678\",\n    \"date\": \"2026-06-01\",\n    \"time\": \"19:00\",\n    \"numberOfPeople\": 2,\n    \"orderDetails\": \"{\\\"Cà phê đen\\\": 2, \\\"Bánh flan\\\": 1}\",\n    \"orderType\": \"food\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/client/reservations",
+              "host": ["{{baseUrl}}", "client"],
+              "path": ["reservations"]
+            },
+            "description": "Đặt bàn (public API - không cần đăng nhập)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "DASHBOARD",
+      "item": [
+        {
+          "name": "Revenue Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stats/revenue",
+              "host": ["{{baseUrl}}", "admin"],
+              "path": ["stats", "revenue"]
+            },
+            "description": "Thống kê doanh thu"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -15,6 +15,12 @@
 8. [Tài liệu Helper Classes](#8-tài-liệu-helper-classes)
 9. [Luồng nghiệp vụ chính](#9-luồng-nghiệp-vụ-chính)
 10. [Công nghệ sử dụng](#10-công-nghệ-sử-dụng)
+11. [Hướng dẫn thực hành](#11-hướng-dẫn-thực-hành)
+    - [11.1 Chuẩn bị môi trường](#111-chuẩn-bị-môi-trường)
+    - [11.2 Tạo nhánh Git cho từng feature](#112-tạo-nhánh-git-cho-từng-feature)
+    - [11.3 Chạy ứng dụng](#113-chạy-ứng-dụng)
+    - [11.4 Kiểm thử API](#114-kiểm-thử-api)
+    - [11.5 Lộ trình code theo thứ tự](#115-lộ-trình-code-theo-thứ-tự)
 
 ---
 
@@ -2235,3 +2241,507 @@ curl -X POST http://localhost:8080/api/v1/admin/reservations \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -d '{"name":"Khách A","email":"khach@email.com","phone":"0901234567","date":"2026-05-30","time":"19:00","numberOfPeople":2,"orderDetails":"{\"Mì Ý\":1}","orderType":"food"}'
 ```
+
+---
+
+## 11. HƯỚNG DẪN THỰC HÀNH
+
+### 11.1 Chuẩn bị môi trường
+
+#### 11.1.1 Cài đặt Java 17
+
+```powershell
+# Kiểm tra phiên bản Java hiện tại
+java -version
+
+# Nếu chưa có Java 17, cài đặt:
+# Windows: Download JDK 17 từ https://adoptium.net/
+# macOS: brew install openjdk@17
+# Linux: sudo apt install openjdk-17-jdk
+```
+
+#### 11.1.2 Cài đặt MySQL
+
+```powershell
+# Kiểm tra MySQL
+mysql --version
+
+# Hoặc dùng Docker:
+docker run --name mysql-qlnh -e MYSQL_ROOT_PASSWORD=rootpass -e MYSQL_DATABASE=qlnh_db -e MYSQL_USER=qlnh_user -e MYSQL_PASSWORD=qlnh_password_456 -p 3309:3306 -d mysql:8
+
+# Tạo database (nếu chưa có)
+docker exec -it mysql-qlnh mysql -uroot -prootpass -e "CREATE DATABASE IF NOT EXISTS qlnh_db;"
+docker exec -it mysql-qlnh mysql -uroot -prootpass -e "CREATE USER IF NOT EXISTS 'qlnh_user'@'%' IDENTIFIED BY 'qlnh_password_456';"
+docker exec -it mysql-qlnh mysql -uroot -prootpass -e "GRANT ALL PRIVILEGES ON qlnh_db.* TO 'qlnh_user'@'%';"
+docker exec -it mysql-qlnh mysql -uroot -prootpass -e "FLUSH PRIVILEGES;"
+```
+
+**Lưu ý quan trọng:** Port trong `application.properties` là `3309`, không phải `3306`. Nếu dùng MySQL cục bộ không qua Docker, hãy đổi thành `3306`.
+
+#### 11.1.3 Cài đặt Maven
+
+```powershell
+# Kiểm tra Maven
+mvn -version
+
+# Nếu chưa có, tải Maven:
+# Windows: https://maven.apache.org/download.cgi
+# macOS: brew install maven
+# Linux: sudo apt install maven
+```
+
+#### 11.1.4 Cài đặt IDE
+
+**IntelliJ IDEA (Khuyến nghị):**
+1. Tải IntelliJ IDEA Community/Ultimate từ https://jetbrains.com/idea
+2. Import project: File → Open → Chọn thư mục `reservation_system`
+3. Maven sẽ tự động import dependencies
+
+**VS Code:**
+1. Cài extensions: "Extension Pack for Java", "Spring Boot Extension Pack"
+2. Mở thư mục project
+3. File → Open Folder → Chọn `reservation_system`
+
+### 11.2 Tạo nhánh Git cho từng feature
+
+#### Nguyên tắc
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  MỖI METHOD / FEATURE = 1 NHÁNH GIT RIÊNG                │
+│                                                          │
+│  main ──────── feature/user-register ──── PR ──── main   │
+│               feature/table-crud                           │
+│               feature/food-crud                           │
+│               feature/reservation-create                   │
+│               ...                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### 11.2.1 Quy tắc đặt tên nhánh
+
+| Tiền tố | Khi nào dùng | Ví dụ |
+|---------|---------------|--------|
+| `feature/` | Code feature mới | `feature/user-register` |
+| `fix/` | Sửa bug | `fix/delete-cascade` |
+| `docs/` | Viết tài liệu | `docs/update-guide` |
+| `refactor/` | Cải thiện code | `refactor/validation` |
+
+#### 11.2.2 Workflow tạo nhánh cho method đầu tiên
+
+**Bước 1: Đảm bảo nhánh `main` cập nhật**
+
+```bash
+# 1. Checkout về main
+git checkout main
+
+# 2. Pull code mới nhất
+git pull origin main
+
+# 3. Kiểm tra
+git status
+```
+
+**Bước 2: Tạo nhánh mới cho feature đầu tiên**
+
+```bash
+# Tạo nhánh cho method registerClient
+git checkout -b feature/user-register
+```
+
+**Bước 3: Xác nhận đang ở nhánh đúng**
+
+```bash
+git branch --show-current
+# Output: feature/user-register
+```
+
+**Bước 4: Code method `registerClient` trong `UserService.java`**
+
+Đọc DEV_GUIDE.md phần 5.1.1, copy logic vào file.
+
+**Bước 5: Commit khi hoàn thành**
+
+```bash
+# Xem thay đổi
+git status
+git diff src/main/java/com/example/qlnh/services/UserService.java
+
+# Stage file đã sửa
+git add src/main/java/com/example/qlnh/services/UserService.java
+
+# Commit với message rõ ràng
+git commit -m "feat(user): implement registerClient method in UserService
+
+- Add email duplicate check
+- Generate 6-digit OTP
+- Set OTP expiry to 15 minutes
+- Send OTP email asynchronously
+- Set emailVerified=false for new users"
+
+# Push lên remote
+git push -u origin feature/user-register
+```
+
+**Bước 6: Tạo Pull Request (PR)**
+
+```bash
+# Qua GitHub:
+# 1. Vào https://github.com/phongdh04/reservation_system
+# 2. Click "Compare & pull request"
+# 3. Chọn base: main, compare: feature/user-register
+# 4. Viết mô tả PR
+# 5. Click "Create pull request"
+```
+
+**Bước 7: Merge PR sau khi review**
+
+```bash
+# Sau khi PR được approve trên GitHub:
+# 1. Click "Merge pull request"
+# 2. "Confirm merge"
+# 3. Quay lại local, checkout main và pull
+git checkout main
+git pull origin main
+```
+
+**Bước 8: Xóa nhánh đã merge (optional)**
+
+```bash
+# Xóa nhánh local (sau khi đã merge)
+git branch -d feature/user-register
+
+# Xóa nhánh remote (sau khi đã merge)
+git push origin --delete feature/user-register
+```
+
+#### 11.2.3 Tạo nhánh cho method tiếp theo
+
+```bash
+# Luôn bắt đầu từ main CẬP NHẬT NHẤT
+git checkout main
+git pull origin main
+
+# Tạo nhánh mới cho method tiếp theo
+git checkout -b feature/user-verify-otp
+
+# Code xong → commit → push → tạo PR → merge
+```
+
+#### 11.2.4 Template commit message chuẩn
+
+```
+<type>(<scope>): <short description>
+
+[optional body]
+
+[optional footer]
+
+# Ví dụ:
+feat(user): implement registerClient method
+fix(table): resolve soft delete cascade issue
+docs(api): update reservation endpoint documentation
+refactor(service): simplify createReservation logic
+```
+
+| Type | Mục đích |
+|------|--------|
+| `feat` | Feature mới |
+| `fix` | Sửa bug |
+| `docs` | Tài liệu |
+| `refactor` | Cấu trúc lại code |
+| `test` | Thêm test |
+| `chore` | Công việc nhỏ (format, import) |
+
+### 11.3 Chạy ứng dụng
+
+#### 11.3.1 Chạy bằng Maven (Terminal/PowerShell)
+
+```powershell
+# Di chuyển vào thư mục project
+cd C:\Users\phong\reservation_system
+
+# Chạy ứng dụng
+mvn spring-boot:run
+
+# Hoặc chạy với profile cụ thể
+mvn spring-boot:run -Dspring.profiles.active=dev
+
+# Nếu gặp lỗi JAVA_HOME, set trước:
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.12.7-hotspot"
+mvn spring-boot:run
+```
+
+**Thành công khi thấy:**
+```
+Started QlnhApplication in X.XXX seconds
+```
+
+**Lỗi thường gặp khi chạy:**
+
+| Lỗi | Nguyên nhân | Cách sửa |
+|------|------------|----------|
+| `Connection refused: localhost:3309` | MySQL chưa chạy | Start MySQL / kiểm tra Docker container |
+| `Access denied for user 'qlnh_user'` | Sai password | Kiểm tra `application.properties` |
+| `JAVA_HOME not found` | Java chưa cài | Cài JDK 17 |
+| `Unable to find valid certification path` | Lỗi SSL | Thêm `useSSL=false` vào connection URL |
+
+#### 11.3.2 Chạy bằng IntelliJ IDEA
+
+1. Mở project → File → Project Structure → SDK → Chọn Java 17
+2. Run → Edit Configurations → "+" → Spring Boot
+3. Chọn class: `QlnhApplication`
+4. Click Run (nút tam giác xanh)
+5. Console sẽ hiển thị logs
+
+#### 11.3.3 Chạy bằng JAR file
+
+```powershell
+# Build JAR
+mvn clean package -DskipTests
+
+# Chạy JAR
+java -jar target/qlnh-0.0.1-SNAPSHOT.jar
+```
+
+### 11.4 Kiểm thử API
+
+#### 11.4.1 Công cụ kiểm thử
+
+| Công cụ | Mô tả | Link |
+|---------|--------|------|
+| **Postman** (Khuyến nghị) | HTTP client mạnh mẽ | https://postman.com |
+| **Thunder Client** (VS Code) | Plugin HTTP client cho VS Code | Extension trong VS Code |
+| **curl** | Gọi API từ terminal | Có sẵn trong Windows/macOS/Linux |
+| **Insomnia** | HTTP client nhẹ | https://insomnia.rest |
+
+#### 11.4.2 Cách import Postman Collection
+
+Tạo file `qlnh-api.postman_collection.json` trong project root:
+
+```json
+{
+  "info": {
+    "name": "QLNH Restaurant API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"email\":\"admin@gmail.com\",\"password\":\"12345678\"}"},
+            "url": {"raw": "http://localhost:8080/api/v1/auth/login", "protocol": "http", "host": ["localhost:8080"], "path": ["api", "v1", "auth", "login"]}
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### 11.4.3 Test Auth API - Đăng nhập
+
+**Endpoint:** `POST http://localhost:8080/api/v1/auth/login`
+
+**Request Body (Postman/Thunder Client):**
+```json
+{
+  "email": "admin@gmail.com",
+  "password": "12345678"
+}
+```
+
+**Kết quả thành công:**
+```json
+{
+  "success": true,
+  "message": "Đăng nhập thành công",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpYXQiOjE3NDkz...",
+    "email": "admin@gmail.com",
+    "role": "admin",
+    "name": "Admin User"
+  },
+  "timestamp": "2026-05-27T23:50:00"
+}
+```
+
+**Cách copy token để test các API khác:**
+
+1. Copy giá trị `token` từ response
+2. Trong Postman: Tab "Authorization" → Type "Bearer Token" → Paste token
+3. Tất cả API admin sẽ tự động gửi kèm token
+
+#### 11.4.4 Test CRUD API với curl
+
+**Đăng nhập + Lấy token:**
+
+```powershell
+# Bước 1: Login và lưu token vào biến
+$response = Invoke-RestMethod -Uri "http://localhost:8080/api/v1/auth/login" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body '{"email":"admin@gmail.com","password":"12345678"}'
+
+$token = $response.data.token
+Write-Host "Token: $token"
+```
+
+**Xem danh sách users:**
+
+```powershell
+# Bước 2: Gọi API với token
+Invoke-RestMethod -Uri "http://localhost:8080/api/v1/admin/users" `
+  -Method GET `
+  -Headers @{ "Authorization" = "Bearer $token" } `
+  -ContentType "application/json"
+```
+
+**Tạo user mới:**
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8080/api/v1/admin/users" `
+  -Method POST `
+  -Headers @{ "Authorization" = "Bearer $token"; "Content-Type" = "application/json" } `
+  -Body '{
+    "name": "Test Staff",
+    "email": "staff@qlnh.com",
+    "phone": "0909999999",
+    "role": "staff",
+    "password": "12345678",
+    "confirmPassword": "12345678"
+  }'
+```
+
+#### 11.4.5 Cách kiểm tra DataLoader đã chạy chưa
+
+Sau khi chạy `mvn spring-boot:run` lần đầu, kiểm tra:
+
+```sql
+-- Kiểm tra users đã được tạo chưa
+SELECT * FROM users;
+
+-- Kiểm tra bàn đã được tạo chưa
+SELECT * FROM tables;
+
+-- Kiểm tra món ăn đã được tạo chưa
+SELECT * FROM foods;
+```
+
+Nếu có dữ liệu → DataLoader đã chạy thành công.
+
+**Lỗi DataLoader không chạy:**
+
+Nếu chạy lần đầu mà không có dữ liệu, kiểm tra:
+1. Database connection trong `application.properties` có đúng không?
+2. `userRepository.count() == 0` trong DataLoader đã được implement chưa (hiện là TODO)
+3. MySQL có đang chạy không?
+
+#### 11.4.6 Log output khi chạy
+
+Khi chạy thành công, terminal sẽ hiển thị:
+
+```
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/ /_/_/
+ :: Spring Boot ::                (v3.2.4)
+
+2026-05-27 23:50:00 [main] INFO  com.example.qlnh.QlnhApplication - Starting QlnhApplication...
+2026-05-27 23:50:01 [main] INFO  com.example.qlnh.DataLoader - Loading initial data...
+2026-05-27 23:50:02 [main] INFO  com.example.qlnh.DataLoader - Initial data loaded successfully.
+2026-05-27 23:50:02 [main] INFO  com.example.qlnh.QlnhApplication - Started QlnhApplication in 3.456 seconds
+```
+
+### 11.5 Lộ trình code theo thứ tự
+
+#### Thứ tự bắt buộc phải tuân theo
+
+```
+Bước 1: DataLoader          ← Tạo dữ liệu mẫu để test
+Bước 2: UserService (5 method)  ← User là nền tảng cho mọi thứ
+Bước 3: AuthController       ← Có auth mới test được API
+Bước 4: UserController       ← CRUD user
+Bước 5: TableService + Controller   ← Bàn độc lập nhất
+Bước 6: FoodService + Controller    ← Món ăn
+Bước 7: ComboService + Controller   ← Combo phụ thuộc Food
+Bước 8: ReservationService + Controller ← Phụ thuộc User + Table + Food + Combo
+Bước 9: ReviewService + Controller    ← Phụ thuộc User
+Bước 10: EmailService              ← Gửi email
+Bước 11: Client APIs              ← APIs public
+```
+
+#### Chi tiết từng bước
+
+**Bước 1: DataLoader** (5 method cần viết trong UserService)
+- Implement `registerClient` → DataLoader cần tạo user
+- Implement `verifyOtp` → DataLoader cần set verificationToken
+- Implement `verifyEmail` → DataLoader cần set verificationToken
+- Implement `deleteUser` → Cascade delete
+- Implement `comparePassword`, `checkEmailExist`, `checkPhoneExist` → Đã có sẵn
+
+**Bước 2: AuthController** (5 endpoints)
+- `POST /login` → Gọi registerClient
+- `POST /register` → Gọi verifyOtp
+- `POST /verify-otp` → Gọi verifyEmail
+- `GET /verify-email`
+- `GET /me`
+
+**Bước 3-9:** Làm theo hướng dẫn trong DEV_GUIDE.md từng phần.
+
+#### Cách test sau mỗi bước
+
+| Bước | Cách test |
+|------|----------|
+| DataLoader | Query `SELECT * FROM users;` trong MySQL |
+| Auth (login) | Gọi `POST /api/v1/auth/login` với Postman |
+| User CRUD | Gọi CRUD API với token đã lấy ở bước Auth |
+| Table CRUD | Gọi Table API |
+| Food CRUD | Gọi Food API |
+| Combo CRUD | Gọi Combo API |
+| Reservation | Tạo reservation + kiểm tra DB |
+| Review | Tạo review + kiểm tra DB |
+| Email | Check inbox (email thật hoặc log console) |
+
+#### Checklist trước khi commit
+
+- [ ] Code compile không lỗi (`mvn compile`)
+- [ ] Chạy được không crash (`mvn spring-boot:run`)
+- [ ] API trả về đúng response format (`ApiResponse`)
+- [ ] Exception được xử lý đúng (`GlobalExceptionHandler`)
+- [ ] Không có `System.out.println` (dùng `log.info/error/warn`)
+- [ ] Commit message đúng format
+- [ ] Push lên remote
+
+#### Mẹo debug khi API không hoạt động
+
+```
+1. Kiểm tra MySQL có chạy không?
+   → mysql -uqlnh_user -pqlnh_password_456 -h localhost -P 3309 qlnh_db
+
+2. Kiểm tra application.properties có đúng không?
+   → So sánh với config MySQL thực tế
+
+3. Kiểm tra token JWT có đúng không?
+   → Copy token từ /login → https://jwt.io để decode
+
+4. Kiểm tra Security Config có block API không?
+   → Xem file SecurityConfig.java - endpoint có được permitAll không?
+
+5. Bật log SQL để xem query:
+   → Trong application.properties:
+   spring.jpa.show-sql=true
+   logging.level.org.hibernate.SQL=DEBUG
+
+6. Restart app sau khi thay đổi code:
+   → Ctrl+C rồi chạy lại, hoặc dùng Spring Boot DevTools auto-restart
+```
+
