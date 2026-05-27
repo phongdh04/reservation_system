@@ -495,6 +495,8 @@ public User registerClient(String name, String email, String phone, String passw
 7. Trả về user
 ```
 
+> **XEM CHI TIẾT LUỒNG KỸ THUẬT:** [docs/features/verify-otp-flow.md](docs/features/verify-otp-flow.md) — Sơ đồ sequence cho verify, chi tiết 4 validation steps, các trường hợp lỗi (OTP không khớp / hết hạn / đã xác thực), HTTP request/response mẫu, bảng so sánh Register vs Verify.
+
 ---
 
 #### 5.1.3 `verifyEmail(token)`
