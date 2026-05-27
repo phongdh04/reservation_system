@@ -425,7 +425,9 @@ Interface: `IUserService`
 7. Trả về User đã lưu
 ```
 
-**VÍ DỤ:**
+> **XEM CHI TIẾT LUỒNG KỸ THUẬT:** [docs/features/user-registration-otp.md](docs/features/user-registration-otp.md) — Sơ đồ sequence, chi tiết từng file (Controller → Service → Repository → Email), HTTP request/response mẫu, và cách cấu hình email SMTP.
+
+**VÍ DỤ:****
 ```java
 @Override
 @Transactional
