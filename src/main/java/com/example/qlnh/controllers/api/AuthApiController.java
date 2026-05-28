@@ -1,9 +1,13 @@
 package com.example.qlnh.controllers.api;
 
+import com.example.qlnh.dto.request.RegisterRequestDTO;
+import com.example.qlnh.dto.request.VerifyOtpDTO;
 import com.example.qlnh.dto.response.ApiResponse;
 import com.example.qlnh.helpers.JwtTokenProvider;
 import com.example.qlnh.models.entities.User;
 import com.example.qlnh.services.interfaces.IUserService;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -39,14 +43,19 @@ public class AuthApiController {
     // 2. Goi userService.registerClient()
     // 3. Gui email OTP
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
-        throw new UnsupportedOperationException("TODO: Implement register logic");
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO request) {
+        userService.registerClient(request);
+        log.info("[Auth] New client registered: email={}", request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success("Đăng kí thành công!", request.getEmail()));
     }
 
     // TODO: VIET LOGIC - Xac nhan OTP
     @PostMapping("/verify-otp")
-    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> body) {
-        throw new UnsupportedOperationException("TODO: Implement verifyOtp logic");
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpDTO request) {
+        User user = userService.verifyOtp(request);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Xác nhận email thành công! Bạn có thể đăng nhập ngay bây giờ.",
+                Map.of("email", user.getEmail(), "name", user.getName())));
     }
 
     // TODO: VIET LOGIC - Xac nhan email bang token
