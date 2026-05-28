@@ -1,5 +1,7 @@
 package com.example.qlnh.services;
 
+import com.example.qlnh.exception.BusinessValidationException;
+import com.example.qlnh.exception.DuplicateResourceException;
 import com.example.qlnh.exception.ResourceNotFoundException;
 import com.example.qlnh.models.entities.User;
 import com.example.qlnh.repositories.FoodRepository;
@@ -16,6 +18,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.qlnh.dto.request.RegisterRequestDTO;
+import com.example.qlnh.dto.request.VerifyOtpDTO;
 
 import java.util.List;
 import java.util.Random;
@@ -159,21 +163,68 @@ public class UserService implements IUserService {
     @Override
     @Transactional(readOnly = true)
     public long getTotalUsersByKeywordWithRole(String keyword, String role) {
-        return userRepository.countByNameContainingOrEmailContainingOrPhoneContainingAndRole(keyword, keyword, keyword, role);
+        return userRepository.countByNameContainingOrEmailContainingOrPhoneContainingAndRole(keyword, keyword, keyword,
+                role);
     }
 
-    // TODO: VIET LOGIC - dang ky khach hang moi, tao OTP, gui email
     @Override
     @Transactional
-    public User registerClient(String name, String email, String phone, String password) {
-        throw new UnsupportedOperationException("TODO: Implement registerClient logic");
+    public User registerClient(RegisterRequestDTO request) {
+        String email = request.getEmail();
+        String name = request.getName();
+        String password = request.getPassword();
+        String phone = request.getPhone();
+        if (userRepository.existsByEmail(email)) {
+            throw new DuplicateResourceException("Email đã tồn tại" + email);
+        }
+        // Sinh OTP 6 số ngẫu nhiên
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        java.sql.Timestamp expiry = java.sql.Timestamp.valueOf(
+                java.time.LocalDateTime.now().plusMinutes(15));
+
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRole("client");
+        user.setEmailVerified(false);
+        user.setVerificationToken(otp);
+        user.setOtpExpiry(expiry);
+
+        User saved = userRepository.save(user);
+        log.info("Registered new client: {}", email);
+
+        // Gửi OTP qua email (async)
+        emailService.sendOtpEmail(email, name, otp);
+
+        return saved;
     }
 
     // TODO: VIET LOGIC - xac thuc OTP
     @Override
     @Transactional
-    public User verifyOtp(String email, String otp) {
-        throw new UnsupportedOperationException("TODO: Implement verifyOtp logic");
+    public User verifyOtp(VerifyOtpDTO request) {
+        String email = request.getEmail();
+        String otp = request.getOtp();
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("Không tìm thấy tài khoản với email này");
+        }
+        if (user.isEmailVerified()) {
+            throw new BusinessValidationException("Tài khoản đã được xác nhận rồi.");
+        }
+        if (user.getVerificationToken() == null || !user.getVerificationToken().equals(otp)) {
+            throw new BusinessValidationException("Mã OTP không đúng. Vui lòng kiểm tra lại!");
+        }
+        if (user.getOtpExpiry() == null
+                || user.getOtpExpiry().before(new java.sql.Timestamp(System.currentTimeMillis()))) {
+            throw new BusinessValidationException("Mã OTP đã hết hạn. Vui lòng đăng ký lại.");
+        }
+        user.setEmailVerified(true);
+        user.setVerificationToken(null);
+        user.setOtpExpiry(null);
+        return userRepository.save(user);
     }
 
     // TODO: VIET LOGIC - xac thuc email bang token
