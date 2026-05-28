@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body style="font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px;">
+    <div style="max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 8px;">
+        <h2>🍽️ Xác nhận tài khoản!</h2>
+        <p>Xin chào <strong th:text="${name}">Tên Khách Hàng</strong>,</p>
+
+        <p>Mã OTP của bạn là:</p>
+        <h1 style="color: #e74a3b; text-align: center;" th:text="${otp}">123456</h1>
+
+        <p style="color: gray; font-size: 12px;">Mã này có hiệu lực trong 15 phút.</p>
+    </div>
+</body>
+
+</html>
