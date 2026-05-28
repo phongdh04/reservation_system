@@ -13,7 +13,11 @@ import java.util.List;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     User findByEmail(String email);
+
+    boolean existsByEmail(String email);
+
     User findByName(String name);
+
     User findByEmailOrPhone(String email, String phone);
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.email = :email AND u.id != :id")
@@ -26,7 +30,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findByNameEmailPhone(@Param("keyword") String keyword, Pageable pageable);
 
     @Query("SELECT u FROM User u WHERE (u.name LIKE %:keyword% OR u.email LIKE %:keyword% OR u.phone LIKE %:keyword%) AND u.role = :role")
-    Page<User> findByNameEmailPhoneWithRole(@Param("keyword") String keyword, @Param("role") String role, Pageable pageable);
+    Page<User> findByNameEmailPhoneWithRole(@Param("keyword") String keyword, @Param("role") String role,
+            Pageable pageable);
 
     Page<User> findByRole(String role, Pageable pageable);
 
