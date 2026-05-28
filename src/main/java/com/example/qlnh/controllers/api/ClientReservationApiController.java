@@ -5,8 +5,6 @@ import com.example.qlnh.dto.request.ReservationQueueRequest;
 import com.example.qlnh.dto.response.ApiResponse;
 import com.example.qlnh.helpers.ReservationPayloadResolver;
 import com.example.qlnh.helpers.ReservationRequestValidator;
-import com.example.qlnh.services.AvailabilityService;
-import com.example.qlnh.services.ReservationRedisService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +21,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ClientReservationApiController {
 
-    private final ReservationRedisService redisService;
-    private final AvailabilityService availabilityService;
     private final ReservationPayloadResolver payloadResolver;
     private final ReservationRequestValidator validator;
 
