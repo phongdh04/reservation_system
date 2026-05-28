@@ -1,6 +1,5 @@
 package com.example.qlnh.controllers.api;
 
-import com.example.qlnh.services.SseEmitterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -13,10 +12,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/sse")
-@RequiredArgsConstructor
 public class SseController {
 
-    private final SseEmitterService sseService;
 
     @GetMapping(value = "/admin", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(@RequestParam(value = "clientId", defaultValue = "anonymous") String clientId) {
