@@ -2,17 +2,19 @@ package com.example.qlnh.controllers.api;
 
 import com.example.qlnh.dto.request.RegisterRequestDTO;
 import com.example.qlnh.dto.request.VerifyOtpDTO;
+import com.example.qlnh.dto.request.LoginRequestDTO;
 import com.example.qlnh.dto.response.ApiResponse;
+import com.example.qlnh.dto.response.LoginResponseDTO;
 import com.example.qlnh.helpers.JwtTokenProvider;
 import com.example.qlnh.models.entities.User;
 import com.example.qlnh.services.interfaces.IUserService;
+import com.example.qlnh.services.interfaces.IAuthService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
@@ -25,20 +27,22 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthApiController {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtTokenProvider;
     private final IUserService userService;
+
+    private final IAuthService authService;
 
     // TODO: VIET LOGIC - Authenticate user bang email/password
     // 1. Kiem tra email da xac thuc chua
     // 2. Generate JWT token
     // 3. Tra ve token + user info
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-        throw new UnsupportedOperationException("TODO: Implement login logic");
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO request) {
+        LoginResponseDTO responseData = authService.loginUser(request);
+        log.info("[Auth] Login successful: email={}", request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", responseData));
     }
 
-    // TODO: VIET LOGIC - Dang ky tai khoan moi
+    // DONE
     // 1. Validate input
     // 2. Goi userService.registerClient()
     // 3. Gui email OTP
