@@ -1150,6 +1150,8 @@ Base path: `/api/v1/auth`
 
 > **XEM CHI TIẾT LUỒNG KỸ THUẬT:** [docs/features/user-login-flow.md](docs/features/user-login-flow.md) — Sơ đồ sequence chi tiết cho login, 7 file (Controller → AuthenticationManager → UserDetailsService → Repository → BCrypt → JwtTokenProvider → ApiResponse), HTTP request/response mẫu, các trường hợp lỗi (sai password, chưa xác thực email, user không tồn tại), và cách JWT token được sử dụng sau login.
 
+> **XEM CHI TIẾT CRUD:** [docs/features/crud-features.md](docs/features/crud-features.md) — Tài liệu chi tiết tất cả CRUD: User, Table, Food, Combo, Reservation, Client APIs và Dashboard. Mỗi endpoint có sơ đồ file tham gia, input/output table, logic từng bước, code mẫu, HTTP request/response, và exception handling.
+
 ---
 
 #### 6.1.2 `POST /register`
