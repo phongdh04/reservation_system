@@ -44,8 +44,8 @@ public class ComboApiController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ComboResponse>> getCombo(@PathVariable Long id) {
-        // TODO: Lay chi tiet combo + combo_foods
-        throw new UnsupportedOperationException("TODO: Implement getCombo logic");
+        ComboResponse comboResponse = comboService.getComboById(id);
+        return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết Combo thành công", comboResponse));
     }
 
     @PostMapping
