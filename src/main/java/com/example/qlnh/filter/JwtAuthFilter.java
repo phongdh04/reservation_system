@@ -2,7 +2,7 @@ package com.example.qlnh.filter;
 
 import com.example.qlnh.helpers.JwtTokenProvider;
 import com.example.qlnh.models.entities.User;
-import com.example.qlnh.services.interfaces.IUserService;
+import com.example.qlnh.repositories.UserRepository; // ĐỔI IMPORT TỪ Service SANG Repository
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +23,9 @@ import java.util.Collections;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
-    private final IUserService userService;
+
+    // 1. Bơm trực tiếp Repository vào đây để tránh lỗi Circular Dependency
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -36,25 +38,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String jwt = getJwtFromRequest(request);
             if (jwt != null && tokenProvider.validateToken(jwt)) {
                 String email = tokenProvider.getUserEmailFromJWT(jwt);
-                User user = userService.getUserByEmail(email);
+
+                // 2. Dùng hàm findByEmail của Repo và lấy dữ liệu ra từ Optional
+                User user = userRepository.findByEmail(email).orElse(null);
+
                 if (user != null) {
-                    String role = user.getRole() != null ? user.getRole().toLowerCase() : "";
-                    String grantedRole = switch (role) {
-                        case "admin" -> "ROLE_ADMIN";
-                        case "staff" -> "ROLE_STAFF";
-                        case "client" -> "ROLE_CLIENT";
-                        default -> null;
-                    };
-                    if (grantedRole != null) {
-                        UsernamePasswordAuthenticationToken authentication =
-                                new UsernamePasswordAuthenticationToken(email, null,
-                                        Collections.singletonList(new SimpleGrantedAuthority(grantedRole)));
-                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-                    } else if (isAdminApi) {
-                        writeUnauthorized(response, "Unauthorized role");
-                        return;
-                    }
+
+                    // 3. TẬN DỤNG ENUM: Không cần switch-case nữa, ghép thẳng chữ ROLE_ với tên
+                    // Enum
+                    // Ví dụ: user.getRole().name() là "ADMIN" -> grantedRole sẽ là "ROLE_ADMIN"
+                    String grantedRole = "ROLE_" + user.getRole().name();
+
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(email,
+                            null,
+                            Collections.singletonList(new SimpleGrantedAuthority(grantedRole)));
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                } else if (isAdminApi) {
+                    writeUnauthorized(response, "Unauthorized role");
+                    return;
                 }
             } else if (isAdminApi) {
                 writeUnauthorized(response, "Missing or invalid token");
@@ -63,6 +66,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } catch (Exception ex) {
             log.error("Cannot set user authentication", ex);
         }
+
         filterChain.doFilter(request, response);
     }
 
