@@ -1,55 +1,35 @@
 package com.example.qlnh.services.interfaces;
 
 import com.example.qlnh.dto.request.VerifyOtpDTO;
+import com.example.qlnh.dto.response.UserResponse;
+import com.example.qlnh.dto.request.CreateUserRequest;
 import com.example.qlnh.dto.request.RegisterRequestDTO;
+import com.example.qlnh.dto.request.UpdateUserRequest;
 import com.example.qlnh.models.entities.User;
 import org.springframework.data.domain.Page;
 
-import java.util.List;
-
 public interface IUserService {
 
-    List<User> getAllUsers();
+    // ==========================================
+    // TÍNH NĂNG QUẢN TRỊ (ADMIN)
+    // ==========================================
 
-    List<User> getAllUsersSortedByName();
-
-    Page<User> getUsers(int page, int itemsPerPage);
-
-    Page<User> getUsersByRole(int page, int itemsPerPage, String role);
-
-    long getTotalUsers();
-
-    long getTotalUsersByRole(String role);
+    // Siêu hàm: Bao gồm Lấy danh sách, Phân trang, Tìm kiếm, và Lọc theo Role
+    Page<UserResponse> getAllUsers(String keyword, String role, int page, int itemsPerPage);
 
     User getUserById(Long id);
 
-    User getUserByEmail(String email);
+    User createUser(CreateUserRequest request);
 
-    User createUser(User user);
+    User updateUser(Long id, UpdateUserRequest request);
 
-    User updateUser(User user);
+    void deleteUser(Long id, Long currentAdminId);
 
-    void deleteUser(Long id);
-
-    boolean checkEmailExist(User user);
-
-    boolean checkPhoneExist(User user);
-
-    boolean comparePassword(String password, String confirmPassword);
-
-    Page<User> findByKeyword(String keyword, int page, int itemsPerPage);
-
-    long getTotalUsersByKeyword(String keyword);
-
-    Page<User> findByKeywordWithRole(String keyword, String role, int page, int itemsPerPage);
-
-    long getTotalUsersByKeywordWithRole(String keyword, String role);
+    // ==========================================
+    // TÍNH NĂNG KHÁCH HÀNG (CLIENT)
+    // ==========================================
 
     User registerClient(RegisterRequestDTO request);
 
     User verifyOtp(VerifyOtpDTO request);
-
-    User verifyEmail(String token);
-
-    User findByVerificationToken(String token);
 }
