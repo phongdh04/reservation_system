@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ComboRepository extends JpaRepository<Combo, Long> {
 
@@ -31,6 +32,9 @@ public interface ComboRepository extends JpaRepository<Combo, Long> {
         Page<Combo> searchCombos(@Param("keyword") String keyword,
                         @Param("status") ComboStatus status,
                         Pageable pageable);
+
+        @EntityGraph(attributePaths = { "comboFoods", "comboFoods.food" })
+        Optional<Combo> findWithFoodsById(Long id);
 
         // ==========================================
         // 3. NHÓM TRUY VẤN NGHIỆP VỤ HÓA ĐƠN (ORDER/BILL)
