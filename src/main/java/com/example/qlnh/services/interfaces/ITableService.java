@@ -1,24 +1,27 @@
 package com.example.qlnh.services.interfaces;
 
+import com.example.qlnh.dto.request.TableRequest;
+import com.example.qlnh.dto.response.TableResponse; // Nhớ import DTO này nhé
 import com.example.qlnh.models.entities.Table;
 import org.springframework.data.domain.Page;
 
-import java.util.List;
-
 public interface ITableService {
 
-    List<Table> getAllTables();
-    Page<Table> getTablesByPage(int page, int itemsPerPage);
-    long getTotalTables();
+    // ==========================================
+    // 1. SIÊU HÀM TÌM KIẾM & PHÂN TRANG (All-in-One)
+    // ==========================================
+    // Thay thế cho tất cả các hàm get, find, count dư thừa
+    Page<TableResponse> getAllTables(String keyword, String status, int page, int itemsPerPage);
+
+    // ==========================================
+    // 2. NHÓM HÀM THAO TÁC CƠ BẢN (CRUD)
+    // ==========================================
+
     Table getTableById(Long id);
-    Table createTable(Table table);
-    Table updateTable(Table table);
+
+    Table createTable(TableRequest request);
+
+    Table updateTable(Long id, TableRequest request);
+
     void deleteTable(Long id);
-    List<Table> getTablesByStatus(String status);
-    Page<Table> getTablesByPageAndStatus(int page, int itemsPerPage, String status);
-    long getTableCountByStatus(String status);
-    Page<Table> findByKeyword(String keyword, int page, int itemsPerPage);
-    long getTotalTablesByKeyword(String keyword);
-    Page<Table> findByKeywordAndStatus(String keyword, String status, int page, int itemsPerPage);
-    long getTotalTablesByKeywordAndStatus(String keyword, String status);
 }
