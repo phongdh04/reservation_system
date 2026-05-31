@@ -1,8 +1,11 @@
 package com.example.qlnh.repositories;
 
 import com.example.qlnh.models.entities.Combo;
+import com.example.qlnh.models.enums.ComboStatus;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,20 +14,29 @@ import java.util.List;
 
 public interface ComboRepository extends JpaRepository<Combo, Long> {
 
-    Page<Combo> findByStatus(String status, Pageable pageable);
+        // ==========================================
+        // 1. NHÓM KIỂM TRA (Dùng cho luồng Create/Update)
+        // ==========================================
+        boolean existsByName(String name);
 
-    @Query("SELECT c FROM Combo c WHERE c.name LIKE %:keyword%")
-    Page<Combo> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
+        // ==========================================
+        // 2. SIÊU HÀM TÌM KIẾM & PHÂN TRANG (All-in-One)
+        // ==========================================
+        // Dùng EntityGraph để chống N+1 Query. Thay thế cho toàn bộ các hàm findBy...
+        // lắt nhắt
+        @EntityGraph(attributePaths = { "comboFoods", "comboFoods.food" })
+        @Query("SELECT c FROM Combo c WHERE " +
+                        "(:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+                        "AND (:status IS NULL OR c.status = :status)")
+        Page<Combo> searchCombos(@Param("keyword") String keyword,
+                        @Param("status") ComboStatus status,
+                        Pageable pageable);
 
-    @Query("SELECT c FROM Combo c WHERE c.name LIKE %:keyword% AND c.status = :status")
-    Page<Combo> findByKeywordAndStatus(@Param("keyword") String keyword, @Param("status") String status, Pageable pageable);
-
-    @Query("SELECT c FROM Combo c WHERE c.status = 'available' ORDER BY c.price ASC")
-    Page<Combo> findAvailableCombos(Pageable pageable);
-
-    @Query("SELECT COUNT(c) FROM Combo c WHERE c.status = :status")
-    long countByStatus(@Param("status") String status);
-
-    @Query("SELECT c FROM Combo c WHERE c.name IN :names AND c.status = 'available'")
-    List<Combo> findByNameInAndStatusAvailable(@Param("names") List<String> names);
+        // ==========================================
+        // 3. NHÓM TRUY VẤN NGHIỆP VỤ HÓA ĐƠN (ORDER/BILL)
+        // ==========================================
+        // Tự động sinh SQL: Tìm danh sách Combo theo tên và kiểm tra xem có đang bán
+        // không
+        // (Đã sửa lại để dùng Enum thay vì hardcode chữ 'available')
+        List<Combo> findByNameInAndStatus(List<String> names, ComboStatus status);
 }
