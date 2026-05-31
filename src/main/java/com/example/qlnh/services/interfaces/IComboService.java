@@ -20,4 +20,7 @@ public interface IComboService {
     // 4. Hàm xóa (Xóa mềm)
     void deleteCombo(Long id);
 
+    // 5. Hàm lấy chi tiết
+    ComboResponse getComboById(Long id);
+
 }
