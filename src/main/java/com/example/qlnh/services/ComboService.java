@@ -206,4 +206,12 @@ public class ComboService implements IComboService {
         // (Sẽ tự động biến thành UPDATE Xóa mềm nếu đã cấu hình @SQLDelete ở Entity)
         comboRepository.delete(combo);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ComboResponse getComboById(Long id) {
+        Combo combo = comboRepository.findWithFoodsById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Combo với ID: " + id));
+        return ComboResponse.fromEntity(combo);
+    }
 }
