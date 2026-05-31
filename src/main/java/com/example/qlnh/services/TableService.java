@@ -1,13 +1,18 @@
 package com.example.qlnh.services;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import com.example.qlnh.dto.request.TableRequest;
+import com.example.qlnh.dto.response.TableResponse;
+import com.example.qlnh.exception.BusinessValidationException;
 import com.example.qlnh.exception.ResourceNotFoundException;
 import com.example.qlnh.models.entities.Table;
+import com.example.qlnh.models.enums.TableStatus;
 import com.example.qlnh.repositories.TableRepository;
 import com.example.qlnh.services.interfaces.ITableService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,105 +26,116 @@ public class TableService implements ITableService {
 
     private final TableRepository tableRepository;
 
-    // TODO: VIET LOGIC
-    @Override
-    @Transactional(readOnly = true)
-    public List<Table> getAllTables() {
-        return tableRepository.findAll(Sort.by(Sort.Order.asc("capacity"), Sort.Order.asc("name")));
-    }
-
-    // TODO: VIET LOGIC
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Table> getTablesByPage(int page, int itemsPerPage) {
-        return tableRepository.findAll(PageRequest.of(page - 1, itemsPerPage));
-    }
-
-    // TODO: VIET LOGIC
-    @Override
-    @Transactional(readOnly = true)
-    public long getTotalTables() {
-        return tableRepository.count();
-    }
-
-    // TODO: VIET LOGIC
-    @Override
-    @Transactional(readOnly = true)
-    public Table getTableById(Long id) {
-        return tableRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Table", "id", id));
-    }
-
-    // TODO: VIET LOGIC
     @Override
     @Transactional
-    public Table createTable(Table table) {
-        return tableRepository.save(table);
-    }
+    public Table createTable(TableRequest request) {
 
-    // TODO: VIET LOGIC
-    @Override
-    @Transactional
-    public Table updateTable(Table table) {
-        if (!tableRepository.existsById(table.getId())) {
-            throw new ResourceNotFoundException("Table", "id", table.getId());
+        // 1. Kiểm tra nghiệp vụ (Ví dụ: Chống tạo trùng tên bàn)
+        if (tableRepository.existsByName(request.getName())) {
+            throw new BusinessValidationException("Tên bàn '" + request.getName() + "' đã tồn tại!");
         }
+
+        // 2. Chuyển đổi DTO -> Entity (Chính là hàm buildTable cũ của bạn)
+        Table table = new Table();
+        table.setName(request.getName());
+        table.setCapacity(request.getCapacity());
+
+        // Mặc định bàn mới tạo ra luôn ở trạng thái TRỐNG (Nếu bạn dùng Enum)
+        table.setStatus(TableStatus.AVAILABLE);
+
+        // 3. Lưu xuống Database
         return tableRepository.save(table);
     }
 
-    // TODO: VIET LOGIC - soft delete (set deletedAt)
+    @Override
+    @Transactional
+    public Table updateTable(Long id, TableRequest request) {
+        // 1. Tìm Bàn (Nếu không có thì văng lỗi 404 cho GlobalExceptionHandler tự bắt)
+        Table table = tableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn với ID: " + id));
+
+        // 2. Validate và Cập nhật Tên (Logic hóc búa nhất)
+        // Chỉ check trùng lặp nếu người dùng thực sự muốn đổi sang một tên khác
+        if (request.getName() != null && !request.getName().equals(table.getName())) {
+            if (tableRepository.existsByName(request.getName())) {
+                throw new BusinessValidationException("Tên bàn '" + request.getName() + "' đã tồn tại!");
+            }
+            table.setName(request.getName());
+        }
+
+        // 3. Cập nhật các trường thông tin cơ bản khác (Ví dụ: Số ghế)
+        if (request.getCapacity() != null) {
+            table.setCapacity(request.getCapacity());
+        }
+
+        // 3.1 Cập nhật Trạng thái (Status) an toàn với Enum
+        if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
+            try {
+                // Ép chuỗi thành viết hoa và chuyển sang Enum
+                table.setStatus(TableStatus.valueOf(request.getStatus().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                // Chặn đứng nếu Frontend gửi sai trạng thái
+                throw new BusinessValidationException(
+                        "Trạng thái bàn không hợp lệ! Chỉ chấp nhận: AVAILABLE, OCCUPIED, RESERVED.");
+            }
+        }
+
+        // 4. Lưu xuống DB
+        return tableRepository.save(table);
+    }
+
     @Override
     @Transactional
     public void deleteTable(Long id) {
-        throw new UnsupportedOperationException("TODO: Implement deleteTable (soft delete) logic");
+
+        // 1. Tìm bàn (Nếu không có văng lỗi 404)
+        Table table = tableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn với ID: " + id));
+
+        // 2. Lính gác nghiệp vụ: Chống xóa bàn đang hoạt động
+        if (table.getStatus() != TableStatus.AVAILABLE) {
+            throw new BusinessValidationException(
+                    "Hành động bị từ chối: Không thể xóa bàn đang có khách hoặc đã được đặt trước!");
+        }
+
+        // 3. Thực hiện xóa (Sẽ tự động thành Xóa mềm nếu đã cấu hình Entity)
+        tableRepository.delete(table);
     }
 
-    // TODO: VIET LOGIC
     @Override
-    @Transactional(readOnly = true)
-    public List<Table> getTablesByStatus(String status) {
-        return tableRepository.findByStatus(status, PageRequest.of(0, Integer.MAX_VALUE)).getContent();
+    @Transactional(readOnly = true) // Tối ưu tốc độ đọc dữ liệu
+    public Page<TableResponse> getAllTables(String keyword, String status, int page, int itemsPerPage) {
+
+        // --- 1. CHỐT CHẶN AN TOÀN PHÂN TRANG ---
+        int safePage = Math.max(page - 1, 0); // JPA đếm trang từ 0
+        int safeItemsPerPage = Math.min(itemsPerPage, 100); // Tối đa 100 record/trang
+
+        // Sắp xếp bàn mới tạo hoặc bàn có ID nhỏ lên đầu
+        Pageable pageable = PageRequest.of(safePage, safeItemsPerPage, Sort.by("id").ascending());
+
+        // --- 2. XỬ LÝ LỌC ENUM (An toàn) ---
+        TableStatus tableStatus = null;
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                // Ép Frontend gửi gì cũng thành IN HOA để so sánh với Enum
+                tableStatus = TableStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BusinessValidationException(
+                        "Trạng thái lọc không hợp lệ! Chỉ dùng: AVAILABLE, OCCUPIED, RESERVED.");
+            }
+        }
+
+        // --- 3. GỌI SIÊU HÀM TÌM KIẾM TRONG REPOSITORY ---
+        Page<Table> tables = tableRepository.searchTables(keyword, tableStatus, pageable);
+
+        // --- 4. MAP SANG DTO VÀ TRẢ VỀ ---
+        return tables.map(TableResponse::fromEntity);
     }
 
-    // TODO: VIET LOGIC
     @Override
-    @Transactional(readOnly = true)
-    public Page<Table> getTablesByPageAndStatus(int page, int itemsPerPage, String status) {
-        return tableRepository.findByStatus(status, PageRequest.of(page - 1, itemsPerPage));
-    }
-
-    // TODO: VIET LOGIC
-    @Override
-    @Transactional(readOnly = true)
-    public long getTableCountByStatus(String status) {
-        return tableRepository.countByStatus(status);
-    }
-
-    // TODO: VIET LOGIC
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Table> findByKeyword(String keyword, int page, int itemsPerPage) {
-        return tableRepository.findByKeyword(keyword, PageRequest.of(page - 1, itemsPerPage));
-    }
-
-    // TODO: VIET LOGIC
-    @Override
-    @Transactional(readOnly = true)
-    public long getTotalTablesByKeyword(String keyword) {
-        return tableRepository.countByStatus(keyword);
-    }
-
-    // TODO: VIET LOGIC
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Table> findByKeywordAndStatus(String keyword, String status, int page, int itemsPerPage) {
-        return tableRepository.findByKeywordAndStatus(keyword, status, PageRequest.of(page - 1, itemsPerPage));
-    }
-
-    // TODO: VIET LOGIC
-    @Override
-    @Transactional(readOnly = true)
-    public long getTotalTablesByKeywordAndStatus(String keyword, String status) {
-        return tableRepository.countByStatus(status);
+    @Transactional(readOnly = true) // Thêm dòng này để tăng tốc độ lấy dữ liệu từ DB
+    public Table getTableById(Long id) {
+        return tableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn với ID: " + id));
     }
 }
