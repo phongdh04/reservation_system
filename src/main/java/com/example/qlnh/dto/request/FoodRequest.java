@@ -20,6 +20,8 @@ public class FoodRequest {
     @Min(value = 0, message = "Price must be non-negative")
     private Float price;
 
+    // Bổ sung giới hạn độ dài cho URL ảnh
+    @Size(max = 1000, message = "Image URL must not exceed 1000 characters")
     private String imageUrl;
 
     @NotBlank(message = "Status is required")
