@@ -27,29 +27,47 @@ public class UserApiController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<UserResponse>>> listUsers(
-            @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "itemsPerPage", defaultValue = "10") int itemsPerPage,
-            @RequestParam(value = "role", required = false) String role,
-            @RequestParam(value = "keyword", required = false) String keyword) {
-        // TODO: GOI userService de lay danh sach user
-        throw new UnsupportedOperationException("TODO: Implement listUsers logic");
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int itemsPerPage,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String keyword) {
+
+        // Ném toàn bộ tham số xuống Service xử lý
+        Page<UserResponse> userPage = userService.getAllUsers(keyword, role, page, itemsPerPage);
+
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách thành công", userPage));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Void>> createUser(@Valid @RequestBody CreateUserRequest req) {
-        // TODO: Validate + tao user
-        throw new UnsupportedOperationException("TODO: Implement createUser logic");
+    public ResponseEntity<ApiResponse<Void>> createUser(@Valid @RequestBody CreateUserRequest request) {
+        userService.createUser(request);
+
+        log.info("[User] Admin created user email={} role={}", request.getEmail(), request.getRole());
+        return ResponseEntity.ok(ApiResponse.success("Tạo người dùng thành công"));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest req) {
-        // TODO: Lay user cu + update
-        throw new UnsupportedOperationException("TODO: Implement updateUser logic");
+    public ResponseEntity<ApiResponse<Void>> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request) {
+
+        // Ném ID và Request xuống cho Service lo toàn bộ
+        userService.updateUser(id, request);
+
+        log.info("[User] Admin updated user id={}", id);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật người dùng thành công"));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
-        // TODO: Xoa user (khong cho xoa admin dang login)
-        throw new UnsupportedOperationException("TODO: Implement deleteUser logic");
+
+        // Lấy thông tin Admin đang gọi API này
+        User currentUser = currentUserResolver.resolve();
+
+        // Giao phó toàn bộ logic cho Service (Truyền ID cần xóa và ID của Admin vào)
+        userService.deleteUser(id, currentUser.getId());
+
+        log.info("[User] Admin (id={}) deleted user (id={})", currentUser.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa người dùng thành công"));
     }
 }
