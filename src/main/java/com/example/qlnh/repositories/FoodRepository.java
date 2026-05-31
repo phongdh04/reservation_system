@@ -1,6 +1,8 @@
 package com.example.qlnh.repositories;
 
 import com.example.qlnh.models.entities.Food;
+import com.example.qlnh.models.enums.FoodStatus;
+import com.example.qlnh.models.enums.MealType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -12,36 +14,40 @@ import java.util.List;
 
 public interface FoodRepository extends JpaRepository<Food, Long> {
 
+    // ==========================================
+    // 1. NHÓM KIỂM TRA (Dùng cho Create/Update)
+    // ==========================================
+    boolean existsByName(String name);
+
+    // ==========================================
+    // 2. SIÊU HÀM TÌM KIẾM & LỌC (All-in-One)
+    // ==========================================
+    // Giải quyết phân trang + Lọc + Chống N+1 Query cực kỳ thanh lịch
     @EntityGraph(attributePaths = { "createdBy" })
-    Page<Food> findByMealType(String mealType, Pageable pageable);
+    @Query("SELECT f FROM Food f WHERE " +
+            "(:keyword IS NULL OR LOWER(f.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:status IS NULL OR f.status = :status) " +
+            "AND (:mealType IS NULL OR f.mealType = :mealType)")
+    Page<Food> searchFoods(@Param("keyword") String keyword,
+            @Param("status") FoodStatus status,
+            @Param("mealType") MealType mealType,
+            Pageable pageable);
 
+    // ==========================================
+    // 3. NHÓM TRUY VẤN NGHIỆP VỤ HÓA ĐƠN (ORDER/BILL)
+    // ==========================================
+
+    // Tự động sinh SQL: Tìm danh sách món theo tên và kiểm tra xem có đang bán
+    // không
+    // Thay thế cho hàm findByNameInAndStatusAvailable cũ
+    List<Food> findByNameInAndStatus(List<String> names, FoodStatus status);
+
+    // Phục vụ Frontend lấy nhanh danh sách Menu theo từng loại (Khai vị, Món
+    // chính...) không cần phân trang
     @EntityGraph(attributePaths = { "createdBy" })
-    Page<Food> findByStatus(String status, Pageable pageable);
+    List<Food> findByStatusAndMealTypeOrderByNameAsc(FoodStatus status, MealType mealType);
 
+    // (Tùy chọn) Xem các món ăn do 1 nhân viên cụ thể tạo ra
     @EntityGraph(attributePaths = { "createdBy" })
-    Page<Food> findByStatusAndMealType(String status, String mealType, Pageable pageable);
-
-    @Query(value = "SELECT f FROM Food f JOIN FETCH f.createdBy WHERE f.name LIKE %:keyword%", countQuery = "SELECT COUNT(f) FROM Food f WHERE f.name LIKE %:keyword%")
-    Page<Food> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
-
-    @Query(value = "SELECT f FROM Food f JOIN FETCH f.createdBy WHERE f.name LIKE %:keyword% AND f.status = :status", countQuery = "SELECT COUNT(f) FROM Food f WHERE f.name LIKE %:keyword% AND f.status = :status")
-    Page<Food> findByKeywordAndStatus(@Param("keyword") String keyword, @Param("status") String status, Pageable pageable);
-
-    @Query(value = "SELECT f FROM Food f JOIN FETCH f.createdBy WHERE f.status = 'available' ORDER BY f.id ASC", countQuery = "SELECT COUNT(f) FROM Food f WHERE f.status = 'available'")
-    Page<Food> findFirst6Foods(Pageable pageable);
-
-    @Query(value = "SELECT f FROM Food f JOIN FETCH f.createdBy WHERE f.status = 'available' AND f.mealType = :mealType ORDER BY f.id ASC", countQuery = "SELECT COUNT(f) FROM Food f WHERE f.status = 'available' AND f.mealType = :mealType")
-    Page<Food> find6FoodsByMealType(@Param("mealType") String mealType, Pageable pageable);
-
-    @Query("SELECT COUNT(f) FROM Food f WHERE f.status = :status")
-    long countByStatus(@Param("status") String status);
-
-    @Query("SELECT f FROM Food f JOIN FETCH f.createdBy WHERE f.createdBy.id = :userId")
-    List<Food> findByCreatedBy(@Param("userId") Long userId);
-
-    @Query("SELECT f FROM Food f WHERE f.name IN :names AND f.status = 'available'")
-    List<Food> findByNameInAndStatusAvailable(@Param("names") List<String> names);
-
-    @Query("SELECT f FROM Food f JOIN FETCH f.createdBy WHERE f.status = 'available' AND f.mealType = :mealType ORDER BY f.name ASC")
-    List<Food> findAllByMealTypeOrderByNameAsc(@Param("mealType") String mealType);
+    List<Food> findByCreatedById(Long userId);
 }
