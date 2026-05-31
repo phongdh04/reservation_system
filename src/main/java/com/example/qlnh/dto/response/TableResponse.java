@@ -14,12 +14,13 @@ public class TableResponse {
     private String location;
 
     public static TableResponse fromEntity(Table table) {
-        if (table == null) return null;
+        if (table == null)
+            return null;
         return TableResponse.builder()
                 .id(table.getId())
                 .name(table.getName())
                 .capacity(table.getCapacity())
-                .status(table.getStatus())
+                .status(table.getStatus().name().toLowerCase())
                 .location(table.getLocation())
                 .build();
     }
