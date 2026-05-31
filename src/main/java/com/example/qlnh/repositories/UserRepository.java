@@ -35,4 +35,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
         // Dùng cho hàm Create và Update User để check trùng Email
         boolean existsByEmail(String email);
 
+        // Tìm kiếm khách hàng theo email hoặc số điện thoại
+        Optional<User> findByEmailOrPhone(String email, String phone);
 }
